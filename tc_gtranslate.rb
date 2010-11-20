@@ -7,23 +7,35 @@ require_relative "gtranslate"
 class TestGTranslate < Test::Unit::TestCase
   def setup
     api_key = "AIzaSyBTgpjSu-vy3f1r-tj5wU8M7qkT_5cgYf4"
+    @texts = %w(私はあなたを愛しています。 今日は寝坊した やっぱりRubyは最高のプログラミング言語だ。 最高のハッカーになるためには、寝ている時間はない。)
+    @answers = ["I love you.", "Today I overslept", "Ruby is still the best programming language.", "To become the best hacker, no time to sleep."]
     @gt = GTranslate.new(api_key)
   end
 
   def test_translate_a_to_b
-    org = %w(今日は寝坊した やっぱりRubyは最高のプログラミング言語だ 最高のハッカーになるためには、寝ている時間はない。)
-    res = ["Today I rised late.", "Ruby is a greatest programming lauguage.", "To become an extream hacker, you have no time to sleep."]
-    # assert_equal(res, @gt.translate(org, :from => :ja, :to => :en))
+   assert_equal(@answers, @gt.translate(@texts, :from => :ja, :to => :en))
+   assert_equal(@answers, @gt.translate(@texts))
   end
 
   def test_translate_one_to_many
-    org = ["Today I was overslept"]
-    res = []
     # assert_equal(res, @gt.translate(org, :from => , :to => []))
   end
 
   def test_codes
-    assert_equal('expected', @gt.codes)
+    set = {:Arabic => :ar, :'Chinese-Simplified' => :'zh-CN', :Danish => :da,
+           :English => :en, :French => :fr, :Japanese => :ja, :Swedish => :sv}
+    set.each { |country, code| assert_equal(code, @gt.codes[country]) }
   end
 
+  def test_boomerang
+    assert_equal([@texts[0]], @gt.boomerang(@texts[0], :through => [:da, :sv]))
+    
+  end
+  
+  def test_boomerang_verbose
+    answers = [["I love you."], ["Je t'aime."], ["Io ti amo."], ["私はあなたを愛しています。"]]
+    assert_equal(answers, @gt.boomerang([@texts[0]], :from => 'ja',
+                                                     :through => [:en, :fr, :it],
+                                                     :verbose => true))
+  end
 end

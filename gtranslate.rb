@@ -1,38 +1,65 @@
 #!/opt/local/bin/ruby1.9
 #-*-encoding: utf-8-*-
 %w(cgi rest_client json).each { |lib| require lib }
-module Enumerable; alias :reduce :each_with_object end
 
 class GTranslate
   def initialize(api_key)
     @api_key = api_key
   end
 
-  def translate(lines, opts={:from => :ja, :to => :en})
+  def translate(texts, opts={:to => :en})
+    texts = texts.split("\n") if texts.is_a?(String)
     l, threads = [], []
-    lines.each_with_index do |line, i|
-      url = urlize(line, opts[:from], opts[:to] )
+    texts.each_with_index do |text, i|
+      url = urlize(text, opts)
       threads << Thread.new(url, i) do |site, no|
         res = RestClient.get site
         raise RestClient::RequestFailed unless res.code == 200
-        l << [no, JSON.parse(res)['data']['translations'][0]['translatedText']]
+        l << [no, res]
       end
     end
     threads.each { |th| th.join }
-    l.sort_by { |n, _| n }.map(&:last)
+    l.sort_by { |n, _| n }.map { |_, res| parse(res) }
+  end
+
+  def boomerang(texts, opts={:through => [:en]})
+    origin = opts[:from] || :ja
+    nodes = opts[:through].unshift(origin).push(origin)
+    translated = []
+    nodes.each_cons(2) do |from, to|
+      texts = translate(texts, :from => from, :to => to)
+      translated << texts if opts[:verbose]
+    end
+    opts[:verbose] ? translated : texts
   end
 
   def codes
-    CODE.lines.reduce({}) do |line, h|
-      country, code = line.strip.split(/\s+/)
-      h[country.intern] = code.intern
+    CODE.lines.each_with_object({}) do |line, h|
+      country, code = line.strip.split(/\s+/).map(&:intern)
+      h[country] = code
     end
   end
 
   private
-  def urlize(data, from, to)
-    "https://www.googleapis.com/language/translate/v2" +
-        "?key=#{@api_key}&q=#{CGI.escape data}&source=#{from.to_s}&target=#{to.to_s}"
+  URL = "https://www.googleapis.com/language/translate/v2?"
+  PARAMS = {
+    :key  => ->key{"key=#{key}"},
+    :text => ->text{"q=#{text}"},
+    :from => ->from{"source=#{from.to_s}"},
+    :to   => ->to{"target=#{to.to_s}"}
+  }
+  def urlize(text, opts)
+    opts.merge!({:text => CGI.escape(text), :key => @api_key})
+    URL + uri_params(opts)
+  end
+  
+  def uri_params(opts)
+    opts.inject([]) { |param, (k, v)| param << PARAMS[k][v] }.join("&")
+  end
+
+  def parse(json)
+    translated = JSON.parse(json)['data']['translations'][0]['translatedText']
+    CGI.unescapeHTML(translated)
   end
 
 CODE =<<EOS
