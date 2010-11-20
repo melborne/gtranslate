@@ -6,30 +6,45 @@ class GTranslate
   def initialize(api_key)
     @api_key = api_key
   end
-
+  
+  # options: :from => source language / ommitable(auto detect)
+  #          :to => target language / required
   def translate(texts, opts={:to => :en})
-    texts = texts.split("\n") if texts.is_a?(String)
-    l, threads = [], []
+    texts = texts.split("\n") unless texts.instance_of?(Array)
+    if opts[:to].instance_of?(Array)
+      return multiple_translate(texts, opts)
+    end
+
+    result, threads = [], []
     texts.each_with_index do |text, i|
       url = urlize(text, opts)
       threads << Thread.new(url, i) do |site, no|
         res = RestClient.get site
         raise RestClient::RequestFailed unless res.code == 200
-        l << [no, res]
+        result << [no, res]
       end
     end
     threads.each { |th| th.join }
-    l.sort_by { |n, _| n }.map { |_, res| parse(res) }
+
+    result.sort_by { |n, _| n }.map { |_, res| parse(res) }
   end
 
+  # translate from A language to A language through some other languages
+  # options: :from => original language / ommitable(set :ja)
+  #          :through => intermidiate languages
   def boomerang(texts, opts={:through => [:en]})
+    throughs = opts[:through]
+    throughs = [throughs] unless throughs.instance_of?(Array)
     origin = opts[:from] || :ja
-    nodes = opts[:through].unshift(origin).push(origin)
+
+    nodes = throughs.unshift(origin).push(origin)
+
     translated = []
     nodes.each_cons(2) do |from, to|
       texts = translate(texts, :from => from, :to => to)
       translated << texts if opts[:verbose]
     end
+
     opts[:verbose] ? translated : texts
   end
 
@@ -40,7 +55,6 @@ class GTranslate
     end
   end
 
-  private
   URL = "https://www.googleapis.com/language/translate/v2?"
   PARAMS = {
     :key  => ->key{"key=#{key}"},
@@ -48,6 +62,8 @@ class GTranslate
     :from => ->from{"source=#{from.to_s}"},
     :to   => ->to{"target=#{to.to_s}"}
   }
+
+  private
   def urlize(text, opts)
     opts.merge!({:text => CGI.escape(text), :key => @api_key})
     URL + uri_params(opts)
@@ -60,6 +76,13 @@ class GTranslate
   def parse(json)
     translated = JSON.parse(json)['data']['translations'][0]['translatedText']
     CGI.unescapeHTML(translated)
+  end
+
+  def multiple_translate(texts, opts)
+    targets = opts.delete(:to)
+    targets.each_with_object({}) do |to, h|
+      h[to] = translate(texts, opts.merge(:to => to))
+    end
   end
 
 CODE =<<EOS

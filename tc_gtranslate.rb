@@ -12,13 +12,13 @@ class TestGTranslate < Test::Unit::TestCase
     @gt = GTranslate.new(api_key)
   end
 
-  def test_translate_a_to_b
+  def test_translate_one_to_one
    assert_equal(@answers, @gt.translate(@texts, :from => :ja, :to => :en))
    assert_equal(@answers, @gt.translate(@texts))
   end
 
   def test_translate_one_to_many
-    # assert_equal(res, @gt.translate(org, :from => , :to => []))
+    assert_equal(:res, @gt.translate(@texts, :to => [:en, :it, :ru]))
   end
 
   def test_codes
@@ -28,13 +28,13 @@ class TestGTranslate < Test::Unit::TestCase
   end
 
   def test_boomerang
+    assert_equal([@texts[0]], @gt.boomerang(@texts[0], :through => :ru))
     assert_equal([@texts[0]], @gt.boomerang(@texts[0], :through => [:da, :sv]))
-    
   end
   
   def test_boomerang_verbose
     answers = [["I love you."], ["Je t'aime."], ["Io ti amo."], ["私はあなたを愛しています。"]]
-    assert_equal(answers, @gt.boomerang([@texts[0]], :from => 'ja',
+    assert_equal(answers, @gt.boomerang([@texts[0]], :from => :ja,
                                                      :through => [:en, :fr, :it],
                                                      :verbose => true))
   end
