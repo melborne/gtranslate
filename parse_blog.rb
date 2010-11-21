@@ -47,11 +47,3 @@ class ParseBlog
     l
   end
 end
-
-if __FILE__ == $0
-  blog = "http://d.hatena.ne.jp/keyesberry/20101116/p1"
-  
-  pb = ParseBlog.new(blog)
-  p pb.get(:range => 1..10)
-end
-

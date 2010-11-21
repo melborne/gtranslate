@@ -1,5 +1,7 @@
 #!/opt/local/bin/ruby1.9
 #-*-encoding: utf-8-*-
+# Text Translation using Google Translate API
+# Author: merborne (kyo endo)
 %w(cgi rest_client json).each { |lib| require lib }
 
 class GTranslate
@@ -8,20 +10,28 @@ class GTranslate
   end
   
   # options: :from => source language / ommitable(auto detect)
-  #          :to => target language / required
-  def translate(texts, opts={:to => :en})
+  #          :to => target language / multiple acceptable / required
+  def translate(texts, opts={})
     texts = texts.split("\n") unless texts.instance_of?(Array)
     if opts[:to].instance_of?(Array)
       return multiple_translate(texts, opts)
+    end
+
+    if opts[:to].nil?
+      to =
+        case code = detect(texts[0])[0]
+        when :ja then :en
+        when :en then :ja
+        else :ja
+        end
+      opts.merge!(:to => to)
     end
 
     result, threads = [], []
     texts.each_with_index do |text, i|
       url = urlize(text, opts)
       threads << Thread.new(url, i) do |site, no|
-        res = RestClient.get site
-        raise RestClient::RequestFailed unless res.code == 200
-        result << [no, res]
+        result << [no, send_request(site)]
       end
     end
     threads.each { |th| th.join }
@@ -32,6 +42,7 @@ class GTranslate
   # translate from A language to A language through some other languages
   # options: :from => original language / ommitable(set :ja)
   #          :through => intermidiate languages
+  #          :verbose => output intermidiate results
   def boomerang(texts, opts={:through => [:en]})
     throughs = opts[:through]
     throughs = [throughs] unless throughs.instance_of?(Array)
@@ -55,7 +66,14 @@ class GTranslate
     end
   end
 
-  URL = "https://www.googleapis.com/language/translate/v2?"
+  def detect(text)
+    url = urlize(text, :api => :detect)
+    res = send_request(url)
+    parse(res, :api => :detect)
+  end
+
+  URL = {:v2 => "https://www.googleapis.com/language/translate/v2?",
+         :v1 => "https://ajax.googleapis.com/ajax/services/language/detect?v=1.0&"}
   PARAMS = {
     :key  => ->key{"key=#{key}"},
     :text => ->text{"q=#{text}"},
@@ -64,18 +82,32 @@ class GTranslate
   }
 
   private
+  def send_request(url)
+    res = RestClient.get(url)
+    raise RestClient::RequestFailed, "API Access Failed" unless res.code == 200
+    res
+  end
+
   def urlize(text, opts)
-    opts.merge!({:text => CGI.escape(text), :key => @api_key})
-    URL + uri_params(opts)
+    opts.merge!(:text => CGI.escape(text), :key => @api_key)
+    host = opts.delete(:api) == :detect ? URL[:v1] : URL[:v2]
+    host + uri_params(opts)
   end
   
   def uri_params(opts)
     opts.inject([]) { |param, (k, v)| param << PARAMS[k][v] }.join("&")
   end
 
-  def parse(json)
-    translated = JSON.parse(json)['data']['translations'][0]['translatedText']
-    CGI.unescapeHTML(translated)
+  def parse(json, opt={})
+    h = JSON.parse(json)
+    case opt[:api]
+    when :detect
+      code = h['responseData']['language'].intern
+      return code, codes.key(code)
+    else
+      text = h['data']['translations'][0]['translatedText']
+      CGI.unescapeHTML(text)
+    end
   end
 
   def multiple_translate(texts, opts)
@@ -141,18 +173,3 @@ Welsh   cy
 Yiddish   yi
 EOS
 end
-
-if __FILE__ == $0
-  api_key = "AIzaSyBTgpjSu-vy3f1r-tj5wU8M7qkT_5cgYf4"
-
-  tr = GTranslate.new(api_key)
-  p tr.codes
-  # japanese = tr.translate(english, through, 'ja')
-
-  # set = [original, english, japanese].map { |l| l.join("\n")}.map { |l| l.split("\n\n") }
-  # set.shift.zip(*set).each do |org, en, ja|
-  #   puts org, "-"*40 , en, "-"*40, ja
-  #   puts "="*40
-  # end
-end
-
