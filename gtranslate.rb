@@ -4,7 +4,17 @@
 # Author: merborne (kyo endo)
 %w(cgi rest_client json).each { |lib| require lib }
 
+module Kernel
+  alias :_Array :Array
+  def Array(obj)
+    obj = obj.split("\n") if obj.respond_to?(:split)
+    _Array(obj)
+  end
+end
+
 class GTranslate
+  class APIAccessError < StandardError; end
+
   def initialize(api_key)
     @api_key = api_key
   end
@@ -12,20 +22,12 @@ class GTranslate
   # options: :from => source language / ommitable(auto detect)
   #          :to => target language / multiple acceptable / required
   def translate(texts, opts={})
-    texts = texts.split("\n") unless texts.instance_of?(Array)
+    texts = Array(texts)
     if opts[:to].instance_of?(Array)
       return multiple_translate(texts, opts)
     end
 
-    if opts[:to].nil?
-      to =
-        case code = detect(texts[0])[0]
-        when :ja then :en
-        when :en then :ja
-        else :ja
-        end
-      opts.merge!(:to => to)
-    end
+    opts.merge!(:to => set_target(texts)) if opts[:to].nil?
 
     result, threads = [], []
     texts.each_with_index do |text, i|
@@ -43,12 +45,11 @@ class GTranslate
   # options: :from => original language / ommitable(set :ja)
   #          :through => intermidiate languages
   #          :verbose => output intermidiate results
-  def boomerang(texts, opts={:through => [:en]})
-    throughs = opts[:through]
-    throughs = [throughs] unless throughs.instance_of?(Array)
-    origin = opts[:from] || :ja
-
-    nodes = throughs.unshift(origin).push(origin)
+  def boomerang(texts, opts={})
+    texts = Array(texts)
+    origin = opts[:from] || detect(texts[0])[0]
+    throughs = opts[:through] || set_target(texts)
+    nodes = Array(throughs).unshift(origin).push(origin)
 
     translated = []
     nodes.each_cons(2) do |from, to|
@@ -84,8 +85,10 @@ class GTranslate
   private
   def send_request(url)
     res = RestClient.get(url)
-    raise RestClient::RequestFailed, "API Access Failed" unless res.code == 200
+    raise unless res.code == 200
     res
+  rescue => e
+    raise APIAccessError, "Access Failed. Country code might be irrelevance. #{e.message}"
   end
 
   def urlize(text, opts)
@@ -114,6 +117,14 @@ class GTranslate
     targets = opts.delete(:to)
     targets.each_with_object({}) do |to, h|
       h[to] = translate(texts, opts.merge(:to => to))
+    end
+  end
+
+  def set_target(texts)
+    case code = detect(texts[0])[0]
+    when :ja then :en
+    when :en then :ja
+    else :ja
     end
   end
 

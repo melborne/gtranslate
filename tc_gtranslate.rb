@@ -32,8 +32,10 @@ class TestGTranslate < Test::Unit::TestCase
   end
   
   def test_boomerang
-    assert_equal([@texts[0]], @gt.boomerang(@texts[0], :through => :ru))
-    assert_equal([@texts[0]], @gt.boomerang(@texts[0], :through => [:da, :sv]))
+    text = "私はあなたを愛しています。\nさようなら。"
+    assert_equal(text.split("\n"), @gt.boomerang(text, :through => :ru))
+    assert_equal(text.split("\n"), @gt.boomerang(text, :through => [:de, :fr]))
+    assert_equal(text.split("\n"), @gt.boomerang(text))
   end
   
   def test_boomerang_verbose
@@ -41,7 +43,7 @@ class TestGTranslate < Test::Unit::TestCase
                                                      :through => [:en, :fr, :it],
                                                      :verbose => true))
   end
-
+  
   def test_detect
     h = {:en => "I love you.", :it => "Io ti amo.", :de => "Ich liebe dich."}
     h.each { |code, text| assert_equal(code, @gt.detect(text)[0]) }
