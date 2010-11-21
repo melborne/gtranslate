@@ -32,7 +32,7 @@ class TestGTranslate < Test::Unit::TestCase
   def test_codes
     set = {:Arabic => :ar, :'Chinese-Simplified' => :'zh-CN', :Danish => :da,
            :English => :en, :French => :fr, :Japanese => :ja, :Swedish => :sv}
-    set.each { |country, code| assert_equal(code, @gt.codes[country]) }
+    set.each { |country, code| assert_equal(code, GTranslate.codes[country]) }
   end
   
   def test_boomerang

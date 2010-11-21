@@ -15,6 +15,13 @@ end
 class GTranslate
   class APIAccessError < StandardError; end
 
+  def self.codes
+    CODE.lines.each_with_object({}) do |line, h|
+      country, code = line.strip.split(/\s+/).map(&:intern)
+      h[country] = code
+    end
+  end
+
   def initialize(api_key)
     @api_key = api_key
   end
@@ -60,13 +67,6 @@ class GTranslate
     opts[:verbose] ? translated : texts
   end
 
-  def codes
-    CODE.lines.each_with_object({}) do |line, h|
-      country, code = line.strip.split(/\s+/).map(&:intern)
-      h[country] = code
-    end
-  end
-
   def detect(text)
     url = urlize(text, :api => :detect)
     res = send_request(url)
@@ -106,7 +106,7 @@ class GTranslate
     case opt[:api]
     when :detect
       code = h['responseData']['language'].intern
-      return code, codes.key(code)
+      return code, GTranslate.codes.key(code)
     else
       text = h['data']['translations'][0]['translatedText']
       CGI.unescapeHTML(text)
