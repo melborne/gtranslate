@@ -1,12 +1,16 @@
 #!/opt/local/bin/ruby1.9
 #-*-encoding: utf-8-*-
 require "test/unit"
-
+require "pit"
 require_relative "gtranslate"
+
+@@config = Pit.get("google_translate", :require => {
+        :api_key => "your Google translate API key"
+})
 
 class TestGTranslate < Test::Unit::TestCase
   def setup
-    api_key = "AIzaSyBTgpjSu-vy3f1r-tj5wU8M7qkT_5cgYf4"
+    api_key = @@config[:api_key]
     @texts = %w(私はあなたを愛しています。 今日は寝坊した やっぱりRubyは最高のプログラミング言語だ。 最高のハッカーになるためには、寝ている時間はない。)
     @answers = ["I love you.", "Today I overslept", "Ruby is still the best programming language.", "To become the best hacker, no time to sleep."]
     @answers2 = [["I love you."], ["Je t'aime."], ["Io ti amo."], ["私はあなたを愛しています。"]]
