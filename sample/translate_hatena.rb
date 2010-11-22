@@ -1,7 +1,7 @@
 #!/opt/local/bin/ruby1.9
 #-*-encoding: utf-8-*-
 require "pit"
-require_relative "../lib/parse_blog"
+require_relative "../lib/parse_site"
 require_relative "../lib/gtranslate"
 
 api_key = Pit.get("google_translate", :require => {
@@ -10,7 +10,7 @@ api_key = Pit.get("google_translate", :require => {
 
 url = "http://d.hatena.ne.jp/keyesberry/"
 
-blog = ParseBlog.new(url)
+blog = ParseSite.new(url)
 source = blog.get(:range => 1..10)
 
 gt = GTranslate.new(api_key)

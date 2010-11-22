@@ -2,7 +2,7 @@
 #-*-encoding: utf-8-*-
 %w(nokogiri open-uri).each { |lib| require lib }
 
-class ParseBlog
+class ParseSite
   @@target = {
       :hatena => ".hatena-body .day>.body",
       :rubyorg => "#head>#intro"
