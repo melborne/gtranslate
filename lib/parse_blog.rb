@@ -3,7 +3,10 @@
 %w(nokogiri open-uri).each { |lib| require lib }
 
 class ParseBlog
-  @@css = {:hatena => ".hatena-body .day>.body" }
+  @@target = {
+      :hatena => ".hatena-body .day>.body",
+      :rubyorg => "#head>#intro"
+      }
   def initialize(url=nil) #need to set url here or get method
     @url = url
   end
@@ -22,7 +25,12 @@ class ParseBlog
     end  
     
     case url
-    when %r{d.hatena.ne.jp} then @host = :hatena
+    when %r{d.hatena.ne.jp}
+      @host = :hatena
+      @children = ->node{ node.children.children }
+    when %r{www.ruby-lang.org}
+      @host = :rubyorg
+      @children = ->node{ node.children }
     else
     end
     open(url)
@@ -30,11 +38,10 @@ class ParseBlog
 
   def parse(doc, range)
     l = []
-    case @host
-    when :hatena
+    if @host
       cnt = 0 #count real lines
-      doc.css(@@css[:hatena]).each do |node|
-        node.children.children.each do |line|
+      doc.css(@@target[@host]).each do |node|
+      @children[node].each do |line|
           cnt += 1
           next if cnt < range.begin || line.text =~ /^\s+$/
           l << line.text

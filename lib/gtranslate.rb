@@ -22,6 +22,13 @@ class GTranslate
     end
   end
 
+  VOICES = [:Agnes, :Albert, :BadNews, :Bahh, :Bells, :Boing, :Bruce, :Bubbles, :Cellos, :Deranged, :Fred, :GoodNews, :Hysterical, :Junior, :Kathy, :Organ, :Princess, :Ralph, :Trinoids, :Vicki, :Victoria, :Whisper, :Zarvox]
+
+  def self.say(text, voice=nil)
+    voice ||= VOICES[rand(VOICES.size)]
+    system "say -v #{voice} #{text}"
+  end
+
   def initialize(api_key)
     @api_key = api_key
   end
@@ -72,7 +79,7 @@ class GTranslate
     res = send_request(url)
     parse(res, :api => :detect)
   end
-
+  
   URL = {:v2 => "https://www.googleapis.com/language/translate/v2?",
          :v1 => "https://ajax.googleapis.com/ajax/services/language/detect?v=1.0&"}
   PARAMS = {

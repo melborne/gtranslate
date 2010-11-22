@@ -25,6 +25,14 @@ module Translate
     initial ? codes.select { |country, code| country =~ /^#{initial}/i } : codes
   end
 
+  def say(text, voice=nil)
+    GTranslate.say(text, voice)
+  end
+
+  def voices
+    GTranslate::VOICES
+  end
+
   private
   API_KEY = Pit.get("google_translate",
                     :require => { :api_key => "Google Translate API key" })[:api_key]
