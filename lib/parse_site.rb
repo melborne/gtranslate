@@ -3,83 +3,69 @@
 %w(nokogiri rss open-uri).each { |lib| require lib }
 
 class ParseSite
-  @@target = {
-      :hatena => ".hatena-body .day>.body",
-      :rubyorg => "#head>#intro"
-      }
-
-  def initialize(url=nil, opts={}) #need to set url here or get method
+  def initialize(url, target=nil, doctype=nil)
+    raise "must set URL" unless url
     @url = url
-    @children = ->node{ node.children } #set starndard search path
-    if opts[:label] && opts[:target]
-      @host = opts[:label]
-      @@target[opts[:label]] = opts[:target]
-    end
+    @target = target # specify a target portion of html
+    @doctype = doctype
   end
 
-  def get(opts={})
-    raise ArgumentError, "need url" unless url = opts[:url] || @url
-    range = opts[:range] || (0..-1) # only positive range acceptable from 1
-
-    parse(check_and_get(url), range)
+  def get(range=0..-1) # only positive range acceptable from 1
+    doc = check_and_parse_url
+    extract(doc, range)
   end
 
   private
-  def check_and_get(url)
-    if URI.regexp(['http', 'https']) !~ url
-      raise ArgumentError, "Wrong URI format '#{url}'"
-    end  
-    
-    if rss = rss?(url)
-      @host = :rss
-      return rss
+  def check_and_parse_url
+    if URI.regexp(['http', 'https']) !~ @url
+      raise ArgumentError, "Wrong URI format '#{@url}'"
     end
 
-    case url
-    when %r{d.hatena.ne.jp}
-      @host = :hatena
-      @children = ->node{ node.children.children } #reset search path
-    when %r{www.ruby-lang.org}
-      @host = :rubyorg
+    case @doctype
+    when :rss
+      RSS::Parser.parse(@url)
+    when :html
+      Nokogiri::HTML(open @url)
+    when nil
+      rss = is_rss?(@url)
+      if rss
+        @doctype = :rss
+        rss
+      else
+        @doctype = :html
+        Nokogiri::HTML(open @url)
+      end
     else
-      raise "unknown site" unless @host
+      raise ArgumentError, ":doctype option should be :rss, :html"
     end
-    Nokogiri::HTML(open url)
   end
 
-  def rss?(url) #bad way
-    rss = RSS::Parser.parse(url)
-    return rss if rss.feed_type
+  def is_rss?(url) #bad way
+    doc = RSS::Parser.parse(url)
+    return doc if doc.feed_type
     false
   rescue
     false
   end
 
-  def parse(doc, range)
-    l = []
-    if @host
-      case @host
-      when :rss
-        cnt = 0
-        doc.items.each do |item|
-          cnt += 1
-          next if cnt < range.begin
-          l << item.description
-          return l if range.end >= 0 && l.size >= range.end
-        end
-      else
-        cnt = 0 #count real lines
-        doc.css(@@target[@host]).each do |node|
-          @children[node].each do |line|
+  def extract(doc, range)
+    l, cnt = [], 0
+    inject_item = 
+        Proc.new { |item, meth| # need Proc.new, not lambda because of return
             cnt += 1
-            next if cnt < range.begin || line.text =~ /^\s+$/
-            l << line.text
+            next if cnt < range.begin || item.send(meth) =~ /^\s+$/
+            l << item.send(meth)
             return l if range.end >= 0 && l.size >= range.end
-          end
-        end
-      end
+        }
+    
+    case @doctype
+    when :rss
+      doc.items.each { |item| inject_item[item, :description] }
     else
-      raise "Host not found"
+      raise ArgumentError, "Set css target" unless @target
+      doc.css(@target).each { |node|
+        node.children.each { |line| inject_item[line, :text] }
+      }
     end
     l
   end
