@@ -1,5 +1,6 @@
 module Translate
   require 'gtranslate'
+  require "parse_site"
   require "pit"
 
   # translate text
@@ -25,12 +26,22 @@ module Translate
     initial ? codes.select { |country, code| country =~ /^#{initial}/i } : codes
   end
 
+  # voice out
   def say(text, voice=nil)
+    text = text.gsub(/[\n\r\t]+/, '')
     GTranslate.say(text, voice)
   end
 
+  # available voices to say command
   def voices
     GTranslate::VOICES
+  end
+
+  # translate site texts
+  def site_translate(url, opts={})
+    opts = parse(opts) unless opts.instance_of?(Hash)
+    text = ParseSite.new(url, opts.delete(:target), opts.delete(:type))
+    init.translate(text.get, opts)
   end
 
   private

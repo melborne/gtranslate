@@ -26,7 +26,7 @@ class GTranslate
 
   def self.say(text, voice=nil)
     voice ||= VOICES[rand(VOICES.size)]
-    system "say -v #{voice} #{text}"
+    system "say -v #{voice.to_s} #{text}"
   end
 
   def initialize(api_key)
