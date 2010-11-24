@@ -25,6 +25,7 @@ class GTranslate
   VOICES = [:Agnes, :Albert, :BadNews, :Bahh, :Bells, :Boing, :Bruce, :Bubbles, :Cellos, :Deranged, :Fred, :GoodNews, :Hysterical, :Junior, :Kathy, :Organ, :Princess, :Ralph, :Trinoids, :Vicki, :Victoria, :Whisper, :Zarvox]
 
   def self.say(text, voice=nil)
+    raise "only work for osx" unless RUBY_PLATFORM =~ /darwin/
     voice ||= VOICES[rand(VOICES.size)]
     system "say -v #{voice.to_s} #{text}"
   end
@@ -95,7 +96,7 @@ class GTranslate
     raise unless res.code == 200
     res
   rescue => e
-    raise APIAccessError, "Access Failed. Country code might be irrelevance. #{e.message}"
+    puts APIAccessError, "Access Failed. Country code might be irrelevance. #{e.message}"
   end
 
   def urlize(text, opts)
