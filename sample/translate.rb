@@ -8,6 +8,7 @@ module Translate
     opts = parse(opts) unless opts.instance_of?(Hash)
     init.translate(text, opts)
   end
+  end
 
   # translate from A language to A language through some other languages
   def boomerang(text, opts={})

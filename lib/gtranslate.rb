@@ -4,36 +4,32 @@
 # Author: merborne (kyo endo)
 %w(cgi rest_client json).each { |lib| require lib }
 
-module Kernel
-  alias :_Array :Array
-  def Array(obj)
-    obj = obj.split("\n") if obj.respond_to?(:split)
-    _Array(obj)
-  end
-end
-
-class Symbol
-  def camelize
-    self.to_s.split('_').map(&:capitalize).join(' ')
-  end
-end
-
 class GTranslate
   class APIAccessError < StandardError; end
 
-  def self.codes
-    CODE.lines.each_with_object({}) do |line, h|
-      country, code = line.strip.split(/\s+/).map(&:intern)
-      h[country] = code
-    end
-  end
   VOICES = [:agnes, :albert, :bad_news, :bahh, :bells, :boing, :bruce, :bubbles, :cellos, :deranged, :fred, :good_news, :hysterical, :junior, :kathy, :pipe_organ, :princess, :ralph, :trinoids, :vicki, :victoria, :whisper, :zarvox]
 
-  def self.say(text, voice=nil)
-    raise "only work for osx" unless RUBY_PLATFORM =~ /darwin/
-    voice ||= VOICES.sample
-    system "say -v #{voice.intern.camelize} #{text}"
+  class << self
+    def codes
+      CODE.lines.each_with_object({}) do |line, h|
+        country, code = line.strip.split(/\s+/).map(&:intern)
+        h[country] = code
+      end
+    end
+  
+    # speak a text out. one of voices selected randomly when voice arg ommited.
+    # ex. say("I love Ruby.", :ralph)
+    def say(text, voice=nil)
+      raise "only work on osx" unless RUBY_PLATFORM =~ /darwin/
+      voice ||= VOICES.sample
+      system "say -v #{camelize(voice.intern)} #{text}"
+    end
+  
+    def camelize(symbol)
+      symbol.to_s.split('_').map(&:capitalize).join(' ')
+    end
   end
+  private_class_method :camelize
 
   def initialize(api_key)
     @api_key = api_key
@@ -41,6 +37,7 @@ class GTranslate
   
   # options: :from => source language / ommitable(auto detect)
   #          :to => target language / multiple acceptable / required
+  #       ex. translate("I love ruby.", :to => [:fr, :ja])
   def translate(texts, opts={})
     texts = Array(texts)
     if opts[:to].instance_of?(Array)
@@ -65,6 +62,7 @@ class GTranslate
   # options: :from => original language / ommitable(auto detect)
   #          :through => intermidiate languages
   #          :verbose => output intermidiate results
+  #       ex. boomerang("I love Ruby.", :through => [:fr, :de], :verbose => true)
   def boomerang(texts, opts={})
     texts = Array(texts)
     origin = opts[:from] || detect(texts[0])[0]
@@ -140,6 +138,12 @@ class GTranslate
     else :ja
     end
   end
+
+  def Array(obj)
+    obj = obj.split("\n") if obj.respond_to?(:split)
+    super(obj)
+  end
+
 
 CODE =<<EOS
 Afrikaans   af

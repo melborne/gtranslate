@@ -35,7 +35,7 @@ COUNTRIES = {"English"=>"en", "French"=>"fr", "Japanese"=>"ja", "Korean"=>"ko",
              "Bahasa Indonesia"=>"id", "German"=>"de", "Italian"=> "it",
              "Bulgarian"=>"bg"}
   
-def translate_rubyorg
+def translate_rubyorgs
  COUNTRIES.each do |country, code|
    site = ParseSite.new("#{URL}#{code}", :target => "#head>#intro")
    gt = GTranslate.new(API_KEY)
@@ -47,4 +47,4 @@ def translate_rubyorg
  end
 end
 
-# translate_rubyorg
+translate_rubyorgs
