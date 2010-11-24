@@ -12,6 +12,12 @@ module Kernel
   end
 end
 
+class Symbol
+  def camelize
+    self.to_s.split('_').map(&:capitalize).join(' ')
+  end
+end
+
 class GTranslate
   class APIAccessError < StandardError; end
 
@@ -21,13 +27,12 @@ class GTranslate
       h[country] = code
     end
   end
-
-  VOICES = [:Agnes, :Albert, :BadNews, :Bahh, :Bells, :Boing, :Bruce, :Bubbles, :Cellos, :Deranged, :Fred, :GoodNews, :Hysterical, :Junior, :Kathy, :Organ, :Princess, :Ralph, :Trinoids, :Vicki, :Victoria, :Whisper, :Zarvox]
+  VOICES = [:agnes, :albert, :bad_news, :bahh, :bells, :boing, :bruce, :bubbles, :cellos, :deranged, :fred, :good_news, :hysterical, :junior, :kathy, :pipe_organ, :princess, :ralph, :trinoids, :vicki, :victoria, :whisper, :zarvox]
 
   def self.say(text, voice=nil)
     raise "only work for osx" unless RUBY_PLATFORM =~ /darwin/
-    voice ||= VOICES[rand(VOICES.size)]
-    system "say -v #{voice.to_s} #{text}"
+    voice ||= VOICES.sample
+    system "say -v #{voice.intern.camelize} #{text}"
   end
 
   def initialize(api_key)
@@ -57,7 +62,7 @@ class GTranslate
   end
 
   # translate from A language to A language through some other languages
-  # options: :from => original language / ommitable(set :ja)
+  # options: :from => original language / ommitable(auto detect)
   #          :through => intermidiate languages
   #          :verbose => output intermidiate results
   def boomerang(texts, opts={})

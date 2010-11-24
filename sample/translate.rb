@@ -28,8 +28,16 @@ module Translate
 
   # voice out
   def say(text, voice=nil)
-    text = text.gsub(/[\n\r\t]+/, '')
-    GTranslate.say(text, voice)
+    say = lambda do |t, v|
+      t.gsub!(/[\n\r\t]+/, '')
+      GTranslate.say(t, v)
+    end
+
+    if text.is_a?(Array)
+      text.each { |t| say[t, voice] }
+    else
+      say[text, voice]
+    end
   end
 
   # available voices to say command
