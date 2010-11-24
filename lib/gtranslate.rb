@@ -4,36 +4,30 @@
 # Author: merborne (kyo endo)
 %w(cgi rest_client json).each { |lib| require lib }
 
-module Kernel
-  alias :_Array :Array
-  def Array(obj)
-    obj = obj.split("\n") if obj.respond_to?(:split)
-    _Array(obj)
-  end
-end
-
-class Symbol
-  def camelize
-    self.to_s.split('_').map(&:capitalize).join(' ')
-  end
-end
-
 class GTranslate
   class APIAccessError < StandardError; end
 
-  def self.codes
-    CODE.lines.each_with_object({}) do |line, h|
-      country, code = line.strip.split(/\s+/).map(&:intern)
-      h[country] = code
-    end
-  end
   VOICES = [:agnes, :albert, :bad_news, :bahh, :bells, :boing, :bruce, :bubbles, :cellos, :deranged, :fred, :good_news, :hysterical, :junior, :kathy, :pipe_organ, :princess, :ralph, :trinoids, :vicki, :victoria, :whisper, :zarvox]
 
-  def self.say(text, voice=nil)
-    raise "only work for osx" unless RUBY_PLATFORM =~ /darwin/
-    voice ||= VOICES.sample
-    system "say -v #{voice.intern.camelize} #{text}"
+  class << self
+    def codes
+      CODE.lines.each_with_object({}) do |line, h|
+        country, code = line.strip.split(/\s+/).map(&:intern)
+        h[country] = code
+      end
+    end
+  
+    def say(text, voice=nil)
+      raise "only work on osx" unless RUBY_PLATFORM =~ /darwin/
+      voice ||= VOICES.sample
+      system "say -v #{camelize(voice.intern)} #{text}"
+    end
+  
+    def camelize(symbol)
+      symbol.to_s.split('_').map(&:capitalize).join(' ')
+    end
   end
+  private_class_method :camelize
 
   def initialize(api_key)
     @api_key = api_key
@@ -140,6 +134,12 @@ class GTranslate
     else :ja
     end
   end
+
+  def Array(obj)
+    obj = obj.split("\n") if obj.respond_to?(:split)
+    super(obj)
+  end
+
 
 CODE =<<EOS
 Afrikaans   af
