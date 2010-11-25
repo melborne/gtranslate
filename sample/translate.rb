@@ -1,6 +1,6 @@
 module Translate
-  require 'gtranslate'
-  require "parse_site"
+  autoload :GTranslate, 'gtranslate'
+  autoload :ParseSite, 'parse_site'
   require "pit"
 
   # translate text
