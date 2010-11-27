@@ -9,6 +9,7 @@ class GTranslate
 
   def self.codes
     CODE.lines.each_with_object({}) do |line, h|
+      next if line =~ /^#/
       country, code = line.strip.split(/\s+/).map(&:intern)
       h[country] = code
     end
@@ -132,7 +133,7 @@ CODE =<<EOS
 Afrikaans   af
 Albanian  sq
 Arabic  ar
-Basque  eu
+#Basque  eu
 Belarusian  be
 Bulgarian   bg
 Catalan   ca
