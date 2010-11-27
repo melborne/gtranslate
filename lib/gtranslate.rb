@@ -7,29 +7,12 @@
 class GTranslate
   class APIAccessError < StandardError; end
 
-  VOICES = [:agnes, :albert, :bad_news, :bahh, :bells, :boing, :bruce, :bubbles, :cellos, :deranged, :fred, :good_news, :hysterical, :junior, :kathy, :pipe_organ, :princess, :ralph, :trinoids, :vicki, :victoria, :whisper, :zarvox]
-
-  class << self
-    def codes
-      CODE.lines.each_with_object({}) do |line, h|
-        country, code = line.strip.split(/\s+/).map(&:intern)
-        h[country] = code
-      end
-    end
-  
-    # speak a text out. one of voices selected randomly when voice arg ommited.
-    # ex. say("I love Ruby.", :ralph)
-    def say(text, voice=nil)
-      raise "only work on osx" unless RUBY_PLATFORM =~ /darwin/
-      voice ||= VOICES.sample
-      system "say -v #{camelize(voice.intern)} #{text}"
-    end
-  
-    def camelize(symbol)
-      symbol.to_s.split('_').map(&:capitalize).join(' ')
+  def self.codes
+    CODE.lines.each_with_object({}) do |line, h|
+      country, code = line.strip.split(/\s+/).map(&:intern)
+      h[country] = code
     end
   end
-  private_class_method :camelize
 
   def initialize(api_key)
     @api_key = api_key

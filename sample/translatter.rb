@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 require "gtranslate"
+require "say"
 
 module Termtter::Client
   class << self
@@ -57,7 +58,7 @@ module Termtter::Client
     :help => ['say TEXT [voice:]', 'Speak a Text Out'],
     :exec => lambda { |args|
       text, opts = opt_parse(args, /\s*(voice):([a-zA-Z_]+)\s*/)
-      GTranslate.say(text, opts[:voice])
+      Say.say(text, opts[:voice])
     }
   )
 
@@ -65,7 +66,7 @@ module Termtter::Client
     :name => :voices,
     :help => ['voice TEXT [voice:]', 'List available VOICES for say command'],
     :exec => lambda { |args|
-      puts "=> #{GTranslate::VOICES.join(", ")}"
+      puts "=> #{Say::VOICES.join(", ")}"
     }
   )
 end

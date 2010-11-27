@@ -1,8 +1,8 @@
 #!/opt/local/bin/ruby1.9
 #-*-encoding: utf-8-*-
 require "pit"
-require_relative "../lib/parse_site"
-require_relative "../lib/gtranslate"
+require "parse_site"
+require "gtranslate"
 
 API_KEY = Pit.get("google_translate", :require => {
         :api_key => "your Google translate API key"

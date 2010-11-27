@@ -1,13 +1,13 @@
 module Translate
   autoload :GTranslate, 'gtranslate'
   autoload :ParseSite, 'parse_site'
+  autoload :Say, 'say'
   require "pit"
 
   # translate text
   def translate(text, opts={})
     opts = parse(opts) unless opts.instance_of?(Hash)
     init.translate(text, opts)
-  end
   end
 
   # translate from A language to A language through some other languages
@@ -31,7 +31,7 @@ module Translate
   def say(text, voice=nil)
     say = lambda do |t, v|
       t.gsub!(/[\n\r\t]+/, '')
-      GTranslate.say(t, v)
+      Say.say(t, v)
     end
 
     if text.is_a?(Array)
@@ -43,7 +43,7 @@ module Translate
 
   # available voices to say command
   def voices
-    GTranslate::VOICES
+    Say::VOICES
   end
 
   # translate site texts
@@ -80,3 +80,4 @@ module Translate
     raise ArgumentError, "options are irrelevant."
   end
 end
+
