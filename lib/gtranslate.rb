@@ -72,8 +72,8 @@ class GTranslate
   PARAMS = {
     :key  => ->key{"key=#{key}"},
     :text => ->text{"q=#{text}"},
-    :from => ->from{"source=#{from.to_s}"},
-    :to   => ->to{"target=#{to.to_s}"}
+    :from => ->from{"source=#{from.downcase.to_s}"},
+    :to   => ->to{"target=#{to.downcase.to_s}"}
   }
 
   private
