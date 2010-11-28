@@ -54,6 +54,14 @@ module Termtter::Client
   )
 
   register_command(
+    :name => :languages,
+    :help => ['languages', 'List available Languages to be translated'],
+    :exec => lambda { |args|
+      puts "=> #{GTranslate::codes}"
+    }
+  )
+
+  register_command(
     :name => :say,
     :help => ['say TEXT [voice:]', 'Speak a Text Out'],
     :exec => lambda { |args|
